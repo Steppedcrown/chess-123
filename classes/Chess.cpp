@@ -61,6 +61,51 @@ void Chess::FENtoBoard(const std::string& fen) {
     // 3: castling availability (KQkq or -)
     // 4: en passant target square (in algebraic notation, or -)
     // 5: halfmove clock (number of halfmoves since the last capture or pawn advance)
+
+    // Extract piece placement portion (stop at first space for full FEN strings)
+    std::string placement = fen.substr(0, fen.find(' '));
+
+    int rankIdx = 0; // 0 = rank 8 (black's back rank), 7 = rank 1 (white's back rank)
+    int fileIdx = 0; // 0 = file a, 7 = file h
+
+    for (char c : placement) {
+        if (c == '/') {
+            rankIdx++;
+            fileIdx = 0;
+        } else if (c >= '1' && c <= '8') {
+            fileIdx += (c - '0'); // skip empty squares
+        } else {
+            int x = fileIdx;
+            int y = 7 - rankIdx; // FEN rank 8 maps to grid y=7, rank 1 to y=0
+
+            int playerNumber;
+            ChessPiece piece;
+
+            switch (c) {
+                case 'P': playerNumber = 0; piece = Pawn;   break;
+                case 'N': playerNumber = 0; piece = Knight; break;
+                case 'B': playerNumber = 0; piece = Bishop; break;
+                case 'R': playerNumber = 0; piece = Rook;   break;
+                case 'Q': playerNumber = 0; piece = Queen;  break;
+                case 'K': playerNumber = 0; piece = King;   break;
+                case 'p': playerNumber = 1; piece = Pawn;   break;
+                case 'n': playerNumber = 1; piece = Knight; break;
+                case 'b': playerNumber = 1; piece = Bishop; break;
+                case 'r': playerNumber = 1; piece = Rook;   break;
+                case 'q': playerNumber = 1; piece = Queen;  break;
+                case 'k': playerNumber = 1; piece = King;   break;
+                default: fileIdx++; continue;
+            }
+
+            Bit* bit = PieceForPlayer(playerNumber, piece);
+            bit->setGameTag(playerNumber == 0 ? piece : 128 + piece);
+            ChessSquare* square = _grid->getSquare(x, y);
+            square->setBit(bit);
+            bit->setParent(square);
+            bit->moveTo(square->getPosition());
+            fileIdx++;
+        }
+    }
 }
 
 bool Chess::actionForEmptyHolder(BitHolder &holder)
