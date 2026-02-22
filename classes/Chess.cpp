@@ -99,7 +99,10 @@ void Chess::FENtoBoard(const std::string& fen) {
 
             Bit* bit = PieceForPlayer(playerNumber, piece);
             bit->setGameTag(playerNumber == 0 ? piece : 128 + piece);
-            _grid->getSquare(x, y)->setBit(bit);
+            ChessSquare* square = _grid->getSquare(x, y);
+            square->setBit(bit);
+            bit->setParent(square);
+            bit->moveTo(square->getPosition());
             fileIdx++;
         }
     }

@@ -81,7 +81,8 @@ void Bit::moveTo(const ImVec2 &point)
 	_destinationPosition = point;
 	// work out the step so we move same step each update
 	ImVec2 delta = ImVec2(_destinationPosition.x - getPosition().x, _destinationPosition.y - getPosition().y);
-	_destinationStep = ImVec2(delta.x * 0.05f, delta.y * 0.05f);
+	float speed = 0.02f; // the smaller this is, the slower the piece moves
+	_destinationStep = ImVec2(delta.x * speed, delta.y * speed);
 	_moving = true;
 }
 
