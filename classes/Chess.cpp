@@ -253,6 +253,44 @@ BitboardElement Chess::getKingMoves(ChessSquare* src, int player)
     return moves;
 }
 
+BitboardElement Chess::getSlidingMoves(ChessSquare* src, int player, const int dirs[][2], int numDirs)
+{
+    // Build friendly and occupied bitboards
+    BitboardElement friendly(0), occupied(0);
+    _grid->forEachSquare([&](ChessSquare* sq, int x, int y) {
+        if (sq->bit()) {
+            int idx = y * 8 + x;
+            occupied |= (1ULL << idx);
+            if ((sq->bit()->gameTag() & 128) == (player * 128)) {
+                friendly |= (1ULL << idx);
+            }
+        }
+    });
+
+    int col = src->getColumn();
+    int row = src->getRow();
+
+    BitboardElement moves(0);
+
+    for (int d = 0; d < numDirs; d++) {
+        int dc = dirs[d][0];
+        int dr = dirs[d][1];
+        int c = col + dc;
+        int r = row + dr;
+
+        while (c >= 0 && c < 8 && r >= 0 && r < 8) {
+            int idx = r * 8 + c;
+            if (friendly.getData() & (1ULL << idx)) break;       // blocked by own piece
+            moves |= (1ULL << idx);
+            if (occupied.getData() & (1ULL << idx)) break;       // captured enemy — stop ray
+            c += dc;
+            r += dr;
+        }
+    }
+
+    return moves;
+}
+
 bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
     ChessSquare* srcSquare = static_cast<ChessSquare*>(&src);
@@ -275,6 +313,27 @@ bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 
     if (pieceType == King) {
         BitboardElement moves = getKingMoves(srcSquare, player);
+        int dstIdx = dstSquare->getSquareIndex();
+        return (moves.getData() & (1ULL << dstIdx)) != 0;
+    }
+
+    if (pieceType == Bishop) {
+        const int dirs[4][2] = {{1,1},{1,-1},{-1,1},{-1,-1}};
+        BitboardElement moves = getSlidingMoves(srcSquare, player, dirs, 4);
+        int dstIdx = dstSquare->getSquareIndex();
+        return (moves.getData() & (1ULL << dstIdx)) != 0;
+    }
+
+    if (pieceType == Rook) {
+        const int dirs[4][2] = {{0,1},{0,-1},{1,0},{-1,0}};
+        BitboardElement moves = getSlidingMoves(srcSquare, player, dirs, 4);
+        int dstIdx = dstSquare->getSquareIndex();
+        return (moves.getData() & (1ULL << dstIdx)) != 0;
+    }
+
+    if (pieceType == Queen) {
+        const int dirs[8][2] = {{0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}};
+        BitboardElement moves = getSlidingMoves(srcSquare, player, dirs, 8);
         int dstIdx = dstSquare->getSquareIndex();
         return (moves.getData() & (1ULL << dstIdx)) != 0;
     }
