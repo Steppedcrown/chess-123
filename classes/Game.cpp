@@ -152,6 +152,11 @@ void Game::findDropTarget(ImVec2 &pos)
 	grid->forEachEnabledSquare([&](ChessSquare* square, int x, int y) {
 		if (square == _oldHolder)
 		{
+			if (square->isMouseOver(pos) && _dropTarget)
+			{
+				_dropTarget->willNotDropBit(_dragBit);
+				_dropTarget = nullptr;
+			}
 			return;
 		}
 		if (square->isMouseOver(pos))
