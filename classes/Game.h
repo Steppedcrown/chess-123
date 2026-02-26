@@ -84,6 +84,9 @@ public:
 	// clear any board highlights we've setup for legal moves
 	virtual void clearBoardHighlights();
 
+	// called after a bit is confirmed picked up — override to highlight valid destinations
+	virtual void onBitPickedUp(Bit& bit, BitHolder& src) {}
+
 	// Called on mouse-down/touch of an *empty* BitHolder. Should return a Bit if
 	// it's OK to place a new Bit there; else nil.
 	virtual Bit *bitToPlaceInHolder(BitHolder &holder);

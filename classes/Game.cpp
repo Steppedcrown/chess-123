@@ -152,6 +152,11 @@ void Game::findDropTarget(ImVec2 &pos)
 	grid->forEachEnabledSquare([&](ChessSquare* square, int x, int y) {
 		if (square == _oldHolder)
 		{
+			if (square->isMouseOver(pos) && _dropTarget)
+			{
+				_dropTarget->willNotDropBit(_dragBit);
+				_dropTarget = nullptr;
+			}
 			return;
 		}
 		if (square->isMouseOver(pos))
@@ -300,7 +305,11 @@ void Game::mouseDown(ImVec2 &location, Entity *entity)
 	// Start dragging:
 	_oldPos = _dragBit->getPosition();
 	if (_dragBit)
+	{
 		_dragBit->setPickedUp(true);
+		if (_oldHolder)
+			onBitPickedUp(*_dragBit, *_oldHolder);
+	}
 
 	if (placing && _dragBit)
 	{

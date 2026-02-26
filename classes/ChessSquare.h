@@ -30,6 +30,8 @@ public:
     int getRow() { return _row; }
     int getSquareIndex() { return _row * 8 + _column; }
 
+    void setValidMove(bool valid) { _isValidMove = valid; }
+
 private:
     ImVec4 Lerp(ImVec4 a, ImVec4 b, float t)
     {
@@ -37,5 +39,6 @@ private:
     }
     int _column;
     int _row;
+    bool _isValidMove = false;
     std::string _notation;
 };

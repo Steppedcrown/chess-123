@@ -1,13 +1,3 @@
-Fork or clone your this chess project into a new GitHub repository.
+This chess implementation supports FEN string board setup via `FENtoBoard()`, which parses the piece placement portion of a FEN string (e.g. `"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"`) and accepts either just the board position or a full FEN string with additional fields like active color, castling rights, and en passant target — the extra fields are currently ignored. Piece movement is implemented using bitboards: pawns use dedicated logic for single/double pushes and diagonal captures, knights and kings use a jump-offset system that checks all fixed offsets and filters out friendly-occupied squares, and sliding pieces (bishops, rooks, queens) cast rays in their legal directions and stop on the first blocker — landing on an enemy square to capture it or stopping short of a friendly piece.
 
-Add support for FEN stringsLinks to an external site. to your game setup so that instead of the current way you are setting up your game board you are setting it up with a call similar to the following call.
-
-FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-
-Your routine should be able to take just the board position portion of a FEN string, or the entire FEN string like so:
-
-FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-(you can ignore the end for now)
-
-This will allow you to quickly check that your castling, promotion and en passant code is working.
+*Note: this project was developed with generative AI assistance.*
