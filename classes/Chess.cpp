@@ -122,8 +122,81 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
     return false;
 }
 
+BitboardElement Chess::getPawnMoves(ChessSquare* src, int player)
+{
+    // Build occupied and enemy bitboards from the current board state
+    BitboardElement occupied(0), enemy(0);
+    _grid->forEachSquare([&](ChessSquare* sq, int x, int y) {
+        if (sq->bit()) {
+            int idx = y * 8 + x;
+            occupied |= (1ULL << idx);
+            if ((sq->bit()->gameTag() & 128) != (player * 128)) {
+                enemy |= (1ULL << idx);
+            }
+        }
+    });
+
+    int col = src->getColumn();
+    int row = src->getRow();
+    int idx = row * 8 + col;
+
+    BitboardElement moves(0);
+
+    if (player == 0) {
+        // White pawns move toward increasing row (rank 1 -> rank 8, y=1 -> y=7)
+        int pushIdx = idx + 8;
+        if (pushIdx < 64 && !(occupied.getData() & (1ULL << pushIdx))) {
+            moves |= (1ULL << pushIdx);
+            // Double push only from starting row (row 1)
+            if (row == 1) {
+                int doublePushIdx = idx + 16;
+                if (!(occupied.getData() & (1ULL << doublePushIdx))) {
+                    moves |= (1ULL << doublePushIdx);
+                }
+            }
+        }
+        // Diagonal captures
+        if (col > 0 && (enemy.getData() & (1ULL << (idx + 7))))
+            moves |= (1ULL << (idx + 7));
+        if (col < 7 && (enemy.getData() & (1ULL << (idx + 9))))
+            moves |= (1ULL << (idx + 9));
+    } else {
+        // Black pawns move toward decreasing row (rank 8 -> rank 1, y=6 -> y=0)
+        int pushIdx = idx - 8;
+        if (pushIdx >= 0 && !(occupied.getData() & (1ULL << pushIdx))) {
+            moves |= (1ULL << pushIdx);
+            // Double push only from starting row (row 6)
+            if (row == 6) {
+                int doublePushIdx = idx - 16;
+                if (!(occupied.getData() & (1ULL << doublePushIdx))) {
+                    moves |= (1ULL << doublePushIdx);
+                }
+            }
+        }
+        // Diagonal captures
+        if (col > 0 && (enemy.getData() & (1ULL << (idx - 9))))
+            moves |= (1ULL << (idx - 9));
+        if (col < 7 && (enemy.getData() & (1ULL << (idx - 7))))
+            moves |= (1ULL << (idx - 7));
+    }
+
+    return moves;
+}
+
 bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
+    ChessSquare* srcSquare = static_cast<ChessSquare*>(&src);
+    ChessSquare* dstSquare = static_cast<ChessSquare*>(&dst);
+
+    int pieceType = bit.gameTag() & 0x7F;
+    int player    = (bit.gameTag() & 128) ? 1 : 0;
+
+    if (pieceType == Pawn) {
+        BitboardElement moves = getPawnMoves(srcSquare, player);
+        int dstIdx = dstSquare->getSquareIndex();
+        return (moves.getData() & (1ULL << dstIdx)) != 0;
+    }
+
     return true;
 }
 
