@@ -49,6 +49,10 @@ bool ChessSquare::dropBitAtPoint(Bit *newbit, const ImVec2 &point)
 
 void ChessSquare::setHighlighted(bool highlighted)
 {
+    // Don't un-highlight squares that are pre-marked as valid moves
+    if (!highlighted && _isValidMove)
+        return;
+
     Sprite::setHighlighted(highlighted);
     int odd = (_column + _row) % 2;
     _color = odd ? ImVec4(0.93, 0.93, 0.84, 1.0) : ImVec4(0.48, 0.58, 0.36, 1.0);

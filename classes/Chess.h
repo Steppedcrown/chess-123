@@ -18,6 +18,9 @@ public:
     bool canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst) override;
     bool actionForEmptyHolder(BitHolder &holder) override;
 
+    void onBitPickedUp(Bit& bit, BitHolder& src) override;
+    void clearBoardHighlights() override;
+
     void stopGame() override;
 
     Player *checkForWinner() override;

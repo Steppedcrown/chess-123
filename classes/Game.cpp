@@ -300,7 +300,11 @@ void Game::mouseDown(ImVec2 &location, Entity *entity)
 	// Start dragging:
 	_oldPos = _dragBit->getPosition();
 	if (_dragBit)
+	{
 		_dragBit->setPickedUp(true);
+		if (_oldHolder)
+			onBitPickedUp(*_dragBit, *_oldHolder);
+	}
 
 	if (placing && _dragBit)
 	{

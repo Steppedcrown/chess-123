@@ -108,6 +108,25 @@ void Chess::FENtoBoard(const std::string& fen) {
     }
 }
 
+void Chess::onBitPickedUp(Bit& bit, BitHolder& src)
+{
+    _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
+        if (square == &src) return;
+        if (canBitMoveFromTo(bit, src, *square)) {
+            square->setValidMove(true);
+            square->setHighlighted(true);
+        }
+    });
+}
+
+void Chess::clearBoardHighlights()
+{
+    _grid->forEachSquare([](ChessSquare* square, int x, int y) {
+        square->setValidMove(false);
+        square->setHighlighted(false);
+    });
+}
+
 bool Chess::actionForEmptyHolder(BitHolder &holder)
 {
     return false;
