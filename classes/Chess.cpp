@@ -122,19 +122,24 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
     return false;
 }
 
-BitboardElement Chess::getPawnMoves(ChessSquare* src, int player)
+void Chess::buildBitboards(int player, BitboardElement& occupied, BitboardElement& friendly, BitboardElement& enemy)
 {
-    // Build occupied and enemy bitboards from the current board state
-    BitboardElement occupied(0), enemy(0);
     _grid->forEachSquare([&](ChessSquare* sq, int x, int y) {
         if (sq->bit()) {
             int idx = y * 8 + x;
             occupied |= (1ULL << idx);
-            if ((sq->bit()->gameTag() & 128) != (player * 128)) {
+            if ((sq->bit()->gameTag() & 128) == (player * 128))
+                friendly |= (1ULL << idx);
+            else
                 enemy |= (1ULL << idx);
-            }
         }
     });
+}
+
+BitboardElement Chess::getPawnMoves(ChessSquare* src, int player)
+{
+    BitboardElement occupied(0), friendly(0), enemy(0);
+    buildBitboards(player, occupied, friendly, enemy);
 
     int col = src->getColumn();
     int row = src->getRow();
@@ -183,70 +188,23 @@ BitboardElement Chess::getPawnMoves(ChessSquare* src, int player)
     return moves;
 }
 
-BitboardElement Chess::getKnightMoves(ChessSquare* src, int player)
+BitboardElement Chess::getJumpMoves(ChessSquare* src, int player, const int offsets[][2], int numOffsets)
 {
-    // Build friendly bitboard — knights cannot land on own pieces
-    BitboardElement friendly(0);
-    _grid->forEachSquare([&](ChessSquare* sq, int x, int y) {
-        if (sq->bit() && (sq->bit()->gameTag() & 128) == (player * 128)) {
-            friendly |= (1ULL << (y * 8 + x));
-        }
-    });
+    BitboardElement occupied(0), friendly(0), enemy(0);
+    buildBitboards(player, occupied, friendly, enemy);
 
     int col = src->getColumn();
     int row = src->getRow();
 
     BitboardElement moves(0);
 
-    // All 8 L-shaped offsets: (dCol, dRow)
-    const int offsets[8][2] = {
-        { 1,  2}, { 2,  1}, { 2, -1}, { 1, -2},
-        {-1, -2}, {-2, -1}, {-2,  1}, {-1,  2}
-    };
-
-    for (auto& off : offsets) {
-        int newCol = col + off[0];
-        int newRow = row + off[1];
+    for (int i = 0; i < numOffsets; i++) {
+        int newCol = col + offsets[i][0];
+        int newRow = row + offsets[i][1];
         if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) {
             int newIdx = newRow * 8 + newCol;
-            if (!(friendly.getData() & (1ULL << newIdx))) {
+            if (!(friendly.getData() & (1ULL << newIdx)))
                 moves |= (1ULL << newIdx);
-            }
-        }
-    }
-
-    return moves;
-}
-
-BitboardElement Chess::getKingMoves(ChessSquare* src, int player)
-{
-    // Build friendly bitboard — king cannot land on own pieces
-    BitboardElement friendly(0);
-    _grid->forEachSquare([&](ChessSquare* sq, int x, int y) {
-        if (sq->bit() && (sq->bit()->gameTag() & 128) == (player * 128)) {
-            friendly |= (1ULL << (y * 8 + x));
-        }
-    });
-
-    int col = src->getColumn();
-    int row = src->getRow();
-
-    BitboardElement moves(0);
-
-    // All 8 adjacent offsets (one square in every direction)
-    const int offsets[8][2] = {
-        { 0,  1}, { 1,  1}, { 1,  0}, { 1, -1},
-        { 0, -1}, {-1, -1}, {-1,  0}, {-1,  1}
-    };
-
-    for (auto& off : offsets) {
-        int newCol = col + off[0];
-        int newRow = row + off[1];
-        if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) {
-            int newIdx = newRow * 8 + newCol;
-            if (!(friendly.getData() & (1ULL << newIdx))) {
-                moves |= (1ULL << newIdx);
-            }
         }
     }
 
@@ -255,17 +213,8 @@ BitboardElement Chess::getKingMoves(ChessSquare* src, int player)
 
 BitboardElement Chess::getSlidingMoves(ChessSquare* src, int player, const int dirs[][2], int numDirs)
 {
-    // Build friendly and occupied bitboards
-    BitboardElement friendly(0), occupied(0);
-    _grid->forEachSquare([&](ChessSquare* sq, int x, int y) {
-        if (sq->bit()) {
-            int idx = y * 8 + x;
-            occupied |= (1ULL << idx);
-            if ((sq->bit()->gameTag() & 128) == (player * 128)) {
-                friendly |= (1ULL << idx);
-            }
-        }
-    });
+    BitboardElement occupied(0), friendly(0), enemy(0);
+    buildBitboards(player, occupied, friendly, enemy);
 
     int col = src->getColumn();
     int row = src->getRow();
@@ -306,13 +255,15 @@ bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
     }
 
     if (pieceType == Knight) {
-        BitboardElement moves = getKnightMoves(srcSquare, player);
+        const int offsets[8][2] = {{1,2},{2,1},{2,-1},{1,-2},{-1,-2},{-2,-1},{-2,1},{-1,2}};
+        BitboardElement moves = getJumpMoves(srcSquare, player, offsets, 8);
         int dstIdx = dstSquare->getSquareIndex();
         return (moves.getData() & (1ULL << dstIdx)) != 0;
     }
 
     if (pieceType == King) {
-        BitboardElement moves = getKingMoves(srcSquare, player);
+        const int offsets[8][2] = {{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1}};
+        BitboardElement moves = getJumpMoves(srcSquare, player, offsets, 8);
         int dstIdx = dstSquare->getSquareIndex();
         return (moves.getData() & (1ULL << dstIdx)) != 0;
     }

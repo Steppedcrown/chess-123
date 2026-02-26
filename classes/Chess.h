@@ -34,9 +34,9 @@ private:
     Player* ownerAt(int x, int y) const;
     void FENtoBoard(const std::string& fen);
     char pieceNotation(int x, int y) const;
+    void buildBitboards(int player, BitboardElement& occupied, BitboardElement& friendly, BitboardElement& enemy);
     BitboardElement getPawnMoves(ChessSquare* src, int player);
-    BitboardElement getKnightMoves(ChessSquare* src, int player);
-    BitboardElement getKingMoves(ChessSquare* src, int player);
+    BitboardElement getJumpMoves(ChessSquare* src, int player, const int offsets[][2], int numOffsets);
     BitboardElement getSlidingMoves(ChessSquare* src, int player, const int dirs[][2], int numDirs);
 
     Grid* _grid;
