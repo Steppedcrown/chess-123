@@ -36,6 +36,7 @@ private:
     char pieceNotation(int x, int y) const;
     BitboardElement getPawnMoves(ChessSquare* src, int player);
     BitboardElement getKnightMoves(ChessSquare* src, int player);
+    BitboardElement getKingMoves(ChessSquare* src, int player);
 
     Grid* _grid;
 };

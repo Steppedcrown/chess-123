@@ -218,6 +218,41 @@ BitboardElement Chess::getKnightMoves(ChessSquare* src, int player)
     return moves;
 }
 
+BitboardElement Chess::getKingMoves(ChessSquare* src, int player)
+{
+    // Build friendly bitboard — king cannot land on own pieces
+    BitboardElement friendly(0);
+    _grid->forEachSquare([&](ChessSquare* sq, int x, int y) {
+        if (sq->bit() && (sq->bit()->gameTag() & 128) == (player * 128)) {
+            friendly |= (1ULL << (y * 8 + x));
+        }
+    });
+
+    int col = src->getColumn();
+    int row = src->getRow();
+
+    BitboardElement moves(0);
+
+    // All 8 adjacent offsets (one square in every direction)
+    const int offsets[8][2] = {
+        { 0,  1}, { 1,  1}, { 1,  0}, { 1, -1},
+        { 0, -1}, {-1, -1}, {-1,  0}, {-1,  1}
+    };
+
+    for (auto& off : offsets) {
+        int newCol = col + off[0];
+        int newRow = row + off[1];
+        if (newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8) {
+            int newIdx = newRow * 8 + newCol;
+            if (!(friendly.getData() & (1ULL << newIdx))) {
+                moves |= (1ULL << newIdx);
+            }
+        }
+    }
+
+    return moves;
+}
+
 bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
     ChessSquare* srcSquare = static_cast<ChessSquare*>(&src);
@@ -234,6 +269,12 @@ bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 
     if (pieceType == Knight) {
         BitboardElement moves = getKnightMoves(srcSquare, player);
+        int dstIdx = dstSquare->getSquareIndex();
+        return (moves.getData() & (1ULL << dstIdx)) != 0;
+    }
+
+    if (pieceType == King) {
+        BitboardElement moves = getKingMoves(srcSquare, player);
         int dstIdx = dstSquare->getSquareIndex();
         return (moves.getData() & (1ULL << dstIdx)) != 0;
     }
