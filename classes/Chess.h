@@ -35,6 +35,7 @@ private:
     void FENtoBoard(const std::string& fen);
     char pieceNotation(int x, int y) const;
     BitboardElement getPawnMoves(ChessSquare* src, int player);
+    BitboardElement getKnightMoves(ChessSquare* src, int player);
 
     Grid* _grid;
 };
