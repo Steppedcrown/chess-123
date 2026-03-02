@@ -48,6 +48,9 @@ void Chess::setUpBoard()
     _grid->initializeChessSquares(pieceSize, "boardsquare.png");
     FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
+    _moveList.clear();
+    _moveCount = 0;
+
     startGame();
 }
 
@@ -117,6 +120,20 @@ void Chess::onBitPickedUp(Bit& bit, BitHolder& src)
             square->setHighlighted(true);
         }
     });
+}
+
+void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
+{
+    const char *wpieces = { "0PNBRQK" };
+    const char *bpieces = { "0pnbrqk" };
+
+    char movedPiece = bit.gameTag() < 128 ? wpieces[bit.gameTag()] : bpieces[bit.gameTag()-128];
+    if (movedPiece != '0') {
+        _moveList.push_back(movedPiece);
+        _moveCount = static_cast<int>(_moveList.size());
+    }
+
+    Game::bitMovedFromTo(bit, src, dst);
 }
 
 void Chess::clearBoardHighlights()

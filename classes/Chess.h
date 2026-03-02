@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "Grid.h"
 #include "Bitboard.h"
+#include <vector>
 
 constexpr int pieceSize = 80;
 
@@ -17,6 +18,7 @@ public:
     bool canBitMoveFrom(Bit &bit, BitHolder &src) override;
     bool canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst) override;
     bool actionForEmptyHolder(BitHolder &holder) override;
+    void bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) override;
 
     void onBitPickedUp(Bit& bit, BitHolder& src) override;
     void clearBoardHighlights() override;
@@ -43,4 +45,6 @@ private:
     BitboardElement getSlidingMoves(ChessSquare* src, int player, const int dirs[][2], int numDirs);
 
     Grid* _grid;
+    std::vector<char> _moveList;
+    int _moveCount = 0;
 };
