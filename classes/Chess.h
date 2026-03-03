@@ -32,6 +32,8 @@ public:
     std::string stateString() override;
     void setStateString(const std::string &s) override;
 
+    std::vector<BitMove> generateAllMoves();
+
     Grid* getGrid() override { return _grid; }
 
 private:

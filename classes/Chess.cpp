@@ -113,13 +113,18 @@ void Chess::FENtoBoard(const std::string& fen) {
 
 void Chess::onBitPickedUp(Bit& bit, BitHolder& src)
 {
-    _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
-        if (square == &src) return;
-        if (canBitMoveFromTo(bit, src, *square)) {
-            square->setValidMove(true);
-            square->setHighlighted(true);
+    ChessSquare* srcSquare = static_cast<ChessSquare*>(&src);
+    int srcIndex = srcSquare->getSquareIndex();
+    
+    // Get all available moves and highlight destinations for this piece
+    std::vector<BitMove> allMoves = generateAllMoves();
+    for (const auto& move : allMoves) {
+        if (move.from == srcIndex) {
+            ChessSquare* dstSquare = _grid->getSquare(move.to % 8, move.to / 8);
+            dstSquare->setValidMove(true);
+            dstSquare->setHighlighted(true);
         }
-    });
+    }
 }
 
 void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
@@ -280,52 +285,19 @@ bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
     ChessSquare* srcSquare = static_cast<ChessSquare*>(&src);
     ChessSquare* dstSquare = static_cast<ChessSquare*>(&dst);
-
-    int pieceType = bit.gameTag() & 0x7F;
-    int player    = (bit.gameTag() & 128) ? 1 : 0;
-
-    if (pieceType == Pawn) {
-        BitboardElement moves = getPawnMoves(srcSquare, player);
-        int dstIdx = dstSquare->getSquareIndex();
-        return (moves.getData() & (1ULL << dstIdx)) != 0;
+    
+    int srcIndex = srcSquare->getSquareIndex();
+    int dstIndex = dstSquare->getSquareIndex();
+    
+    // Check if this move is in the list of all available moves
+    std::vector<BitMove> allMoves = generateAllMoves();
+    for (const auto& move : allMoves) {
+        if (move.from == srcIndex && move.to == dstIndex) {
+            return true;
+        }
     }
-
-    if (pieceType == Knight) {
-        const int offsets[8][2] = {{1,2},{2,1},{2,-1},{1,-2},{-1,-2},{-2,-1},{-2,1},{-1,2}};
-        BitboardElement moves = getJumpMoves(srcSquare, player, offsets, 8);
-        int dstIdx = dstSquare->getSquareIndex();
-        return (moves.getData() & (1ULL << dstIdx)) != 0;
-    }
-
-    if (pieceType == King) {
-        const int offsets[8][2] = {{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1}};
-        BitboardElement moves = getJumpMoves(srcSquare, player, offsets, 8);
-        int dstIdx = dstSquare->getSquareIndex();
-        return (moves.getData() & (1ULL << dstIdx)) != 0;
-    }
-
-    if (pieceType == Bishop) {
-        const int dirs[4][2] = {{1,1},{1,-1},{-1,1},{-1,-1}};
-        BitboardElement moves = getSlidingMoves(srcSquare, player, dirs, 4);
-        int dstIdx = dstSquare->getSquareIndex();
-        return (moves.getData() & (1ULL << dstIdx)) != 0;
-    }
-
-    if (pieceType == Rook) {
-        const int dirs[4][2] = {{0,1},{0,-1},{1,0},{-1,0}};
-        BitboardElement moves = getSlidingMoves(srcSquare, player, dirs, 4);
-        int dstIdx = dstSquare->getSquareIndex();
-        return (moves.getData() & (1ULL << dstIdx)) != 0;
-    }
-
-    if (pieceType == Queen) {
-        const int dirs[8][2] = {{0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}};
-        BitboardElement moves = getSlidingMoves(srcSquare, player, dirs, 8);
-        int dstIdx = dstSquare->getSquareIndex();
-        return (moves.getData() & (1ULL << dstIdx)) != 0;
-    }
-
-    return true;
+    
+    return false;
 }
 
 void Chess::stopGame()
@@ -385,3 +357,52 @@ void Chess::setStateString(const std::string &s)
         }
     });
 }
+
+std::vector<BitMove> Chess::generateAllMoves()
+{
+    std::vector<BitMove> allMoves;
+    int currentPlayer = getCurrentPlayer()->playerNumber();
+
+    _grid->forEachSquare([&](ChessSquare* srcSquare, int srcX, int srcY) {
+        Bit* bit = srcSquare->bit();
+        if (!bit) return;
+
+        // Check if this piece belongs to the current player
+        int pieceColor = bit->gameTag() & 128;
+        int currentPlayerColor = currentPlayer * 128;
+        if (pieceColor != currentPlayerColor) return;
+
+        // Get the piece type
+        int pieceType = bit->gameTag() & 0x7F;
+        BitboardElement moves(0);
+
+        // Generate moves based on piece type
+        if (pieceType == Pawn) {
+            moves = getPawnMoves(srcSquare, currentPlayer);
+        } else if (pieceType == Knight) {
+            const int offsets[8][2] = {{1,2},{2,1},{2,-1},{1,-2},{-1,-2},{-2,-1},{-2,1},{-1,2}};
+            moves = getJumpMoves(srcSquare, currentPlayer, offsets, 8);
+        } else if (pieceType == King) {
+            const int offsets[8][2] = {{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1}};
+            moves = getJumpMoves(srcSquare, currentPlayer, offsets, 8);
+        } else if (pieceType == Bishop) {
+            const int dirs[4][2] = {{1,1},{1,-1},{-1,1},{-1,-1}};
+            moves = getSlidingMoves(srcSquare, currentPlayer, dirs, 4);
+        } else if (pieceType == Rook) {
+            const int dirs[4][2] = {{0,1},{0,-1},{1,0},{-1,0}};
+            moves = getSlidingMoves(srcSquare, currentPlayer, dirs, 4);
+        } else if (pieceType == Queen) {
+            const int dirs[8][2] = {{0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}};
+            moves = getSlidingMoves(srcSquare, currentPlayer, dirs, 8);
+        }
+
+        // Convert bitboard moves to BitMove objects
+        int srcIndex = srcSquare->getSquareIndex();
+        moves.forEachBit([&](int dstIndex) {
+            allMoves.emplace_back(srcIndex, dstIndex, static_cast<ChessPiece>(pieceType));
+        });
+    });
+
+    return allMoves;
+}
+
